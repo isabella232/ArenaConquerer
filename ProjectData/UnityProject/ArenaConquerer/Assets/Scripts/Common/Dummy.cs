@@ -2,38 +2,49 @@
 using TMPro;
 using UnityEngine;
 
+[AddComponentMenu("Health")]
+[RequireComponent(typeof(Health))]
 public class Dummy : MonoBehaviour
 {
-    private Health healthRef = new Health();
-    private const float HP = 100f;
+    private Health healthRef;
+    private const float baseHP = 100f;
     private float currentHP;
+
     private bool isAttackStopped = true;
     private bool isGettingHealed = false;
+
     [SerializeField]
     private TextMeshProUGUI logText;
 
     private float delayTime = 1f;
 
+    private void Awake()
+    {
+        healthRef = GetComponent<Health>();
+        ResetComponents();
+    }
     private void Start()
     {
-        logText.text = healthRef.SetTotalHealth(HP).ToString();
+        logText.text = healthRef.SetTotalHealth(baseHP).ToString();
     }
 
     private void Update()
     {
+        //Just For testing will change once dmg system is implemented
         if (Input.GetKeyDown(KeyCode.Space))
         {
             delayTime = 1f;
-            if (isGettingHealed)
+            if (isGettingHealed) //Means there is possibilty that Coroutine is running, Also needs to reset HP
             {
-                ResetDummyHP();
+                StopCoroutine(StartHealthRecovery());
+                ResetComponents();
             }
             isAttackStopped = false;
-            currentHP = healthRef.DamageHealth(HP * 0.15f);
+            currentHP = healthRef.DamageHealth(baseHP * 0.15f);
             logText.text = currentHP.ToString();
         }
 
-        if (currentHP < HP && !isAttackStopped)
+        if (currentHP < baseHP && !isAttackStopped)
         {
             if (delayTime > 0)
             {
@@ -42,7 +53,7 @@ public class Dummy : MonoBehaviour
             else
             {
                 isAttackStopped = true;
-                StopCoroutine(StartHealthRecovery());
+                StopCoroutine(StartHealthRecovery()); //Safety Purpose
                 StartCoroutine(StartHealthRecovery());
             }
         }
@@ -55,7 +66,7 @@ public class Dummy : MonoBehaviour
 
         isGettingHealed = true;
 
-        while (currentHP < HP && isGettingHealed)
+        while (currentHP < baseHP && isGettingHealed)
         {
             if (isAttackStopped && isGettingHealed)
             {
@@ -65,20 +76,20 @@ public class Dummy : MonoBehaviour
             }
             else if (!isAttackStopped)
             {
-                ResetDummyHP();
+                StopCoroutine(StartHealthRecovery());
+                break;
             }
         }
-
-        healthRef.SetTotalHealth(HP);
-        logText.text = currentHP.ToString();
-        isGettingHealed = false;
+        if (isGettingHealed)
+        {
+            ResetComponents();
+        }
     }
 
-    private void ResetDummyHP()
+    private void ResetComponents()
     {
-        StopCoroutine(StartHealthRecovery());
-        currentHP = HP;
-        healthRef.SetTotalHealth(HP);
+        currentHP = baseHP;
+        healthRef.SetTotalHealth(baseHP);
         logText.text = currentHP.ToString();
         isGettingHealed = false;
     }
